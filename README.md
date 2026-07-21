@@ -46,8 +46,8 @@ The Linux ARM64 build works on general 64-bit ARM Linux systems, including Raspb
 Pushing any Git tag starts `.github/workflows/release.yml`. The workflow creates a GitHub release and attaches all three platform binaries plus a versioned source `.tar.gz` archive.
 
 ```sh
-git tag v0.3.0
-git push origin v0.3.0
+git tag v0.4.0
+git push origin v0.4.0
 ```
 
 ## Configuration
