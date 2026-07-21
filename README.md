@@ -1,6 +1,8 @@
-# sendpushover
+# sendpushover-rust
 
 A small Rust command-line client for sending [Pushover](https://pushover.net/) notifications.
+
+> **Warning:** This is an old personal utility and is not production-ready. In particular, verbose output includes the complete API request and may expose credentials.
 
 ## Build and check
 
@@ -83,4 +85,4 @@ cargo run -- --message "Hello from Rust"
 target/release/sendpushover --title "Build" --message "Build completed"
 ```
 
-Run `sendpushover --help` for all options. `--verbose` prints diagnostics while redacting the API token.
+Run `sendpushover --help` for all options. Use `--verbose` only with care; its diagnostics may contain sensitive data.
