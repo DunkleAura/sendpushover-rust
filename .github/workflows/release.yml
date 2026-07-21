@@ -75,16 +75,6 @@ jobs:
           path: release-assets
           merge-multiple: true
 
-      - name: Create source archive
-        shell: bash
-        run: |
-          safe_tag="${GITHUB_REF_NAME//\//-}"
-          git archive \
-            --format=tar.gz \
-            --prefix="sendpushover-${safe_tag}/" \
-            --output="release-assets/sendpushover-${safe_tag}-source.tar.gz" \
-            "$GITHUB_SHA"
-
       - name: Publish release and assets
         env:
           GH_TOKEN: ${{ github.token }}
