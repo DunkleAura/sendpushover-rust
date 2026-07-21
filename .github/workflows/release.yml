@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "**"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-arm64
+            runner: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            source: sendpushover
+            asset: sendpushover-linux-arm64
+          - name: linux-x86_64
+            runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            source: sendpushover
+            asset: sendpushover-linux-x86_64
+          - name: windows-x86_64
+            runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            source: sendpushover.exe
+            asset: sendpushover-windows-x86_64.exe
+
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+
+      - name: Build release binary
+        uses: houseabsolute/actions-rust-cross@v1
+        with:
+          command: build
+          target: ${{ matrix.target }}
+          args: "--locked --release"
+          strip: true
+
+      - name: Rename binary
+        shell: bash
+        run: |
+          mkdir -p release-assets
+          cp "target/${{ matrix.target }}/release/${{ matrix.source }}" \
+             "release-assets/${{ matrix.asset }}"
+
+      - name: Save binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-${{ matrix.name }}
+          path: release-assets/${{ matrix.asset }}
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out tagged source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download compiled binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: binary-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create source archive
+        shell: bash
+        run: |
+          safe_tag="${GITHUB_REF_NAME//\//-}"
+          git archive \
+            --format=tar.gz \
+            --prefix="sendpushover-${safe_tag}/" \
+            --output="release-assets/sendpushover-${safe_tag}-source.tar.gz" \
+            "$GITHUB_SHA"
+
+      - name: Publish release and assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          tag="$GITHUB_REF_NAME"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" release-assets/* --clobber
+          else
+            gh release create "$tag" release-assets/* \
+              --verify-tag \
+              --generate-notes \
+              --title "$tag"
+          fi
